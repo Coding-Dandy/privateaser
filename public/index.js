@@ -1,6 +1,6 @@
 'use strict';
 
-//list of bats
+//list of bars
 //useful for ALL 5 steps
 //could be an array of objects that you fetched from api or database
 const bars = [{
@@ -146,6 +146,84 @@ const actors = [{
   }]
 }];
 
+function RealPricePerPersons(persons, pricePerPerson)
+{
+  if(persons > 60) return pricePerPerson -= pricePerPerson * 0.5;
+  else if(persons > 20) return pricePerPerson -= pricePerPerson * 0.3;
+       else if(persons > 10) return pricePerPerson -= pricePerPerson * 0.1;
+            else return pricePerPerson;
+}
+
+function BookerPrice(bookerId)
+{
+  for(var i = 0; i < events.length; i++)
+  {
+    if(bookerId == events[i].id)
+    {
+      for(var j = 0; j < bars.length; j++)
+      {
+        if(events[i].barId == bars[j].id) return (events[i].time * bars[j].pricePerHour) + RealPricePerPersons(events[i].persons, bars[j].pricePerPerson);
+      }
+    }
+  }
+}
+
+function Commission(bookingPrice, event)
+{
+  const commission = []; //[0] : insurance    [1] : treasury    [3] : privateaser
+  commission[0] = (bookingPrice * 0.3) / 2;
+  commission[1] = event.persons;
+  if(event.deductibleReduction) commission[3] = commission[0];
+  else commission[3] = commission[0] - commission[1];
+  if(commission[3] < 0) commission[3] = 0;
+  return commission;
+}
+
+function GenerateBookerPrices()
+{
+  const commissions = [];
+  const bookingPrices = [];
+  for(var i = 0; i < events.length; i++)
+  {
+    var price = BookerPrice(events[i].id);
+    var commission = Commission(price, events[i]);
+    commissions.push(commission);
+    if(events[i].deductibleReduction) price += events[i].persons;
+    bookingPrices.push(price);
+  }
+}
+
+function CalculateCommission(commision)
+{
+  var result = 0;
+  for(var i = 0; i < commision.length; i++)
+  {
+    result += commision[i];
+  }
+  return result;
+}
+
+function PayTheActors(commissions, bookingPrices)
+{
+  for(var i = 0; i < actors.length; i++)
+  {
+    for(var j = 0; j < events.length; j++)
+    {
+      if(actors[i].eventId == events[j].id)
+      {
+        if(actors[i].payment[0] == 'booker') actors[i].payment[2] = bookingPrices[i];
+        if(actors[i].payment[0] == 'bar') actors[i].payment[2] = bookingPrices - CalculateCommission(commissions[i]);
+        if(actors[i].payment[0] == 'insurance') actors[i].payment[2] = commissions[i][0];
+        if(actors[i].payment[0] == 'treasury') actors[i].payment[2] = commissions[i][1];
+        if(actors[i].payment[0] == 'privateaser') actors[i].payment[2] = commissions[i][2];
+        break
+      }
+    }
+  }
+}
+
+GenerateBookerPrices();
+PayTheActors();
 console.log(bars);
 console.log(events);
 console.log(actors);
